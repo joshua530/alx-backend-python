@@ -24,15 +24,6 @@ class TestGithubOrgClient(unittest.TestCase):
         self.assertEqual(x.org, expected)
         get_patch.assert_called_once_with("https://api.github.com/orgs/"+org)
 
-    def test_public_repos_url(self):
-        """ tests _public_repos_url function """
-        expected = "www.yes.com"
-        payload = {"repos_url": expected}
-        to_mock = 'client.GithubOrgClient.org'
-        with patch(to_mock, PropertyMock(return_value=payload)):
-            cli = GithubOrgClient("x")
-            self.assertEqual(cli._public_repos_url, expected)
-
     @patch('client.get_json')
     def test_public_repos(self, get_json_mock):
         """ tests the public repos """
@@ -49,6 +40,15 @@ class TestGithubOrgClient(unittest.TestCase):
             self.assertEqual(x.public_repos(45), [])
             get_json_mock.assert_called_once_with("www.yes.com")
             y.assert_called_once_with()
+
+    def test_public_repos_url(self):
+        """ tests _public_repos_url function """
+        expected = "www.yes.com"
+        payload = {"repos_url": expected}
+        to_mock = 'client.GithubOrgClient.org'
+        with patch(to_mock, PropertyMock(return_value=payload)):
+            cli = GithubOrgClient("x")
+            self.assertEqual(cli._public_repos_url, expected)
 
     @parameterized.expand([
         ({'license': {'key': 'my_license'}}, 'my_license', True),
@@ -68,7 +68,7 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """ prepare for testing """
+        """ sets up everything for testing """
         org = TEST_PAYLOAD[0][0]
         repos = TEST_PAYLOAD[0][1]
         org_mock = Mock()
@@ -89,16 +89,6 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
         """ clean up after tests """
         cls.get_patcher.stop()
 
-    def test_public_repos(self):
-        """ public repos test """
-        y = GithubOrgClient("x")
-        self.assertEqual(y.org, self.org_payload)
-        self.assertEqual(y.repos_payload, self.repos_payload)
-        self.assertEqual(y.public_repos(), self.expected_repos)
-        self.assertEqual(y.public_repos("NONEXISTENT"), [])
-        self.get.assert_has_calls([call("https://api.github.com/orgs/x"),
-                                   call(self.org_payload["repos_url"])])
-
     def test_public_repos_with_license(self):
         """ public repos with license test """
         y = GithubOrgClient("x")
@@ -107,5 +97,15 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
         self.assertEqual(y.public_repos(), self.expected_repos)
         self.assertEqual(y.public_repos("NONEXISTENT"), [])
         self.assertEqual(y.public_repos("apache-2.0"), self.apache2_repos)
+        self.get.assert_has_calls([call("https://api.github.com/orgs/x"),
+                                   call(self.org_payload["repos_url"])])
+
+    def test_public_repos(self):
+        """ public repos test """
+        y = GithubOrgClient("x")
+        self.assertEqual(y.org, self.org_payload)
+        self.assertEqual(y.repos_payload, self.repos_payload)
+        self.assertEqual(y.public_repos(), self.expected_repos)
+        self.assertEqual(y.public_repos("NONEXISTENT"), [])
         self.get.assert_has_calls([call("https://api.github.com/orgs/x"),
                                    call(self.org_payload["repos_url"])])
